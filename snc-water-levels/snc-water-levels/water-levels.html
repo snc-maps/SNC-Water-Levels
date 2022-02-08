@@ -1,0 +1,920 @@
+<!doctype html>
+<html>
+	<head>
+		<title>
+			Level and Flow Data
+		</title>
+		<!--external stylesheets-->
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css"/>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.2.0/dist/MarkerCluster.css"/>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.2.0/dist/MarkerCluster.Default.css"/>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet.defaultextent@0.0.2/dist/leaflet.defaultextent.css"/>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet-easybutton@2.2.4/src/easy-button.css"/>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+		<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" />
+
+		<script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+		<!-- Load Esri Leaflet from CDN -->
+		<script src="https://unpkg.com/esri-leaflet@2.1.2/dist/esri-leaflet.js"></script>
+		<script src="https://unpkg.com/leaflet.markercluster@1.2.0/dist/leaflet.markercluster.js"></script>
+		<script src="https://unpkg.com/esri-leaflet-cluster@2.0.0/dist/esri-leaflet-cluster.js"></script>
+		<script src="https://unpkg.com/leaflet.defaultextent@0.0.2/dist/leaflet.defaultextent.js"></script>
+		<script src="https://unpkg.com/leaflet-html-legend@0.3.0/dist/L.Control.HtmlLegend.js"></script>
+		<script src="https://unpkg.com/leaflet-easybutton@2.2.4/src/easy-button.js"></script>
+
+		<!--jquery, bootstrap, and wordpress stuff-->
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+		<!-- Wordpress Style Sheets -->
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+		<!--Highcharts libraries-->
+		<script type="text/javascript" src="https://code.highcharts.com/stock/6.1.0/highstock.js"></script>
+		<script type="text/javascript" src="https://code.highcharts.com/stock/6.1.0/highcharts-more.js"></script>
+		<script type="text/javascript" src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+
+		<!--libraries for displaying KiWIS data-->
+		<script type="text/javascript" src="./util.js"></script>
+		<script type="text/javascript" src="./lib/classes/TimeSeries.js"></script>
+		<script type="text/javascript" src="./lib/classes/Range.js"></script>
+		<script type="text/javascript" src="./lib/classes/Station.js"></script>
+		<script type="text/javascript" src="./lib/classes/StationList.js"></script>
+		<script type="text/javascript" src="./lib/classes/Tooltip.js"></script>
+		<script type="text/javascript" src="./lib/classes/DataDisplay.js"></script>
+		<script type="text/javascript" src="./lib/classes/DataDisplay/GraphDisplay.js"></script>
+		<script type="text/javascript" src="./lib/classes/DataDisplay/TableDisplay.js"></script>
+		<script type="text/javascript" src="./lib/classes/DataDisplay/TableDisplay/CSVDownload.js"></script>
+		<script type="text/javascript" src="./lib/classes/DataDisplay/RecntDisplay.js"></script>
+		<script type="text/javascript" src="./lib/classes/DataDisplay/RecntDisplay/RecentData.js"></script>
+		<script type="text/javascript" src="./lib/mvc-highstock.js"></script>
+		<script type="text/javascript" src="./lib/ca-stations.js"></script>
+		<script type="text/javascript" src="./lib/map-options.js"></script>
+
+		<!--link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"-->
+
+		<!--internal stylesheets-->
+		<link rel="stylesheet" href="./lib/mvc-highstock.css"/>
+		<link rel="stylesheet" href="./lib/classes/Tooltip.css"/>
+		<link rel="stylesheet" href="./watershed-conditions-message.css"/>
+		<link rel="stylesheet" href="water-levels.css"/>
+	</head>
+	<body class="hazard-on max-hazard-on">
+		<div id="mvca-map"></div>
+		<div id="data-modal" class="modal fade mvc-size-fixed" role="dialog">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">
+							&times;
+						</button>
+						<h4 class="modal-title">
+							<span id="gauge-name"></span>
+							|
+							<nav id="mvc-data-nav" class="navbar navbar-expand-sm" role="navigation">
+								<div class="navbar-header">
+									<button type="button" class="navbar-toggle collapsed hidden-sm hidden-md hidden-lg" data-toggle="collapse" data-target="#mvc-data-tab">
+										<span class="navbar-toggle-icon glyphicon glyphicon-menu-hamburger"></span>
+									</button>
+								</div>
+								<div class="navbar-collapse collapse" id="mvc-data-tab">
+									<ul class="nav nav-pills navbar-nav">
+										<li class="nav-item">
+											<a id="mvc-tab-graph-tab" class="nav-link active" href="#mvc-tab-graph" data-toggle="tab">
+												Graph Data
+											</a>
+										</li>
+										<li class="nav-item">
+											<a id="mvc-tab-table-tab" class="nav-link" href="#mvc-tab-table" data-toggle="tab">
+												Table Data
+											</a>
+										</li>
+										<li class="nav-item">
+											<a id="mvc-tab-download-tab" class="nav-link" href="#mvc-tab-download" data-toggle="tab">
+												Download Data
+											</a>
+										</li>
+									</ul>
+								</div>
+							</nav>
+						</h4>
+					</div>
+					<div class="modal-body">
+						<button type="button" class="close mvc-mobile-only" data-dismiss="modal">
+							&times;
+						</button>
+						<nav id="mvc-data-nav-2" class="navbar navbar-expand-sm mvc-mobile-only" role="navigation">
+							<div class="navbar-header">
+								<button type="button" class="navbar-toggle collapsed hidden-sm hidden-md hidden-lg" data-toggle="collapse" data-target="#mvc-data-tab-2">
+									<span class="navbar-toggle-icon glyphicon glyphicon-menu-hamburger"></span>
+								</button>
+							</div>
+							<div class="navbar-collapse collapse" id="mvc-data-tab-2">
+								<ul class="nav nav-pills navbar-nav">
+									<li class="nav-item">
+										<a id="mvc-tab-graph-tab-2" class="nav-link" href="#mvc-tab-graph" data-toggle="tab">
+											Graph Data
+										</a>
+									</li>
+									<li class="nav-item">
+										<a id="mvc-tab-table-tab-2" class="nav-link" href="#mvc-tab-table" data-toggle="tab">
+											Table Data
+										</a>
+									</li>
+									<li class="nav-item">
+										<a id="mvc-tab-download-tab-2" class="nav-link" href="#mvc-tab-download" data-toggle="tab">
+											Download Data
+										</a>
+									</li>
+								</ul>
+							</div>
+						</nav>
+						<div id="mvc-data-tab-content" class="tab-content">
+							<div id="mvc-tab-graph" class="tab-pane fade active">
+								<div class="mvc-range-container mvc-graph mvc-mobile-only">
+									View Data
+									<div id="mvc-from" class="mvc-range-selector">
+										From: 
+									</div>
+									<div class="mvc-range-selector mvc-graph">
+										<input type="text" name="min" class="mvc-range-selector mvc-graph" value="" pattern="\d{3}\d+-(0[1-9]|1[0-2])-([0][1-9]|[1-2][0-9]|3[0-1])"/>
+										<text class="pseudo-input">
+											<span>
+												
+											</span>
+										</text>
+									</div>
+									<div id="mvc-to" class="mvc-range-selector">
+										To: 
+									</div>
+									<div class="mvc-range-selector">
+										<input type="text" name="max" class="mvc-range-selector mvc-graph" value="" pattern="\d{3}\d+-(0[1-9]|1[0-2])-([0][1-9]|[1-2][0-9]|3[0-1])"/>
+										<text class="pseudo-input">
+											<span>
+												
+											</span>
+										</text>
+									</div>
+								</div>
+								<div id="chart-content" class="mvc-size-fixed">
+									<h3>
+										Now Loading...
+									</h3>
+								</div>
+							</div>
+							<div id="mvc-tab-table" class="tab-pane fade">
+								<div class="mvc-range-container mvc-table">
+									View Data
+									<div id="mvc-from" class="mvc-range-selector">
+										From: 
+									</div>
+									<div class="mvc-range-selector mvc-table">
+										<input type="text" name="min" class="mvc-range-selector mvc-table" value="" pattern="\d{3}\d+-(0[1-9]|1[0-2])-([0][1-9]|[1-2][0-9]|3[0-1])"/>
+										<text class="pseudo-input">
+											<span>
+												
+											</span>
+										</text>
+									</div>
+									<div id="mvc-to" class="mvc-range-selector">
+										To: 
+									</div>
+									<div class="mvc-range-selector">
+										<input type="text" name="max" class="mvc-range-selector mvc-table" value="" pattern="\d{3}\d+-(0[1-9]|1[0-2])-([0][1-9]|[1-2][0-9]|3[0-1])"/>
+										<text class="pseudo-input">
+											<span>
+												
+											</span>
+										</text>
+									</div>
+								</div>
+								<div id="table-content">
+									<h3>
+										Now Loading...
+									</h3>
+								</div>
+							</div>
+							<div id="mvc-tab-download" class="tab-pane fade">
+								<div>
+									<p>
+										<span>
+											South Nations Conservation monitors stream flow, water quality, meteorological conditions, and operational 
+											conditions at SNC dams. The information is collected and transmitted from each station to SNC's Operations Centre in 
+											Carleton Place, Ontario once an hour.
+										</span>
+									</p>
+									<p>
+										<span>
+											Users of SNC's near real-time data are cautioned to consider the 
+											<a href="/legal/provisional-data/">provisional</a>
+											nature of the information before using it for 
+											decisions that concern personal or public safety or the conduct of business. These data are not citable until reviewed and 
+											approved by SNC.
+										</span>
+									</p>
+									<p>
+										<!--span>
+											All SNC Monitoring Data is made available under the 
+											<a href="/legal/pdf/2018.06.01 SNC Open Data Licence v1.pdf">SNC Open Data Licence</a>.
+										</span-->
+									</p>
+								</div>
+								<div>
+									Download Data
+									<div id="mvc-from" class="mvc-range-selector">
+										From: 
+									</div>
+									<div class="mvc-range-selector">
+										<input type="text" name="min" class="mvc-range-selector" value="" data-prev="" pattern="\d{3}\d+-(0[1-9]|1[0-2])-([0][1-9]|[1-2][0-9]|3[0-1])"/>
+										<text class="pseudo-input">
+											<span>
+												
+											</span>
+										</text>
+									</div>
+									<div id="mvc-to" class="mvc-range-selector">
+										To: 
+									</div>
+									<div class="mvc-range-selector">
+										<input type="text" name="max" class="mvc-range-selector" value="" data-prev="" pattern="\d{3}\d+-(0[1-9]|1[0-2])-([0][1-9]|[1-2][0-9]|3[0-1])"/>
+										<text class="pseudo-input">
+											<span>
+												
+											</span>
+										</text>
+									</div>
+									<button type="button" class="download" data-mvc-target="#data-modal #mvc-tab-download input.mvc-range-selector">
+										&nbsp; Download CSV
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="" data-dismiss="modal">
+							Close
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="help-modal" class="modal fade" role="dialog">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">
+							&times;
+						</button>
+						<h4 class="modal-title">
+							How to use our Page
+						</h4>
+					</div>
+					<div class="modal-body">
+						<div>
+							<table class="mvc-help">
+								<tr>
+									<td>
+										<div class="mvc-marker-icon mvc-legend snc-level"></div>
+									</td>
+									<td>
+										This symbol represents the location of a level gauge.  Click on this icon to see the most recent level and flow data
+										 from this location.  
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-marker-icon mvc-legend snc-climate"></div>
+									</td>
+									<td>
+										This symbol represents the location of a gauge.  Click on this icon to see the most recent precipitation data from 
+										this location.  
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-marker-icon mvc-legend snc-snow"></div>
+									</td>
+									<td>
+										This symbol represents the location of a gauge.  Click on this icon to see the most recent snow depth and snow 
+										water equivalent data from this location.  
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="marker-cluster marker-cluster-small mvc-legend">
+											<div>
+												<span>
+													#
+												</span>
+											</div>
+										</div>
+									</td>
+									<td>
+										This symbol represents a cluster of gauges.  Click on the cluster icon to zoom into the gauge cluster.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="station-button-icon mvc-legend snc-icon snc-level"></div>
+									</td>
+									<td>
+										This symbol represents a level gauge.  These sites can measure the water level, flow, and precipitation, 
+										water.  Click on this icon to view a chart of the associated data.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="station-button-icon mvc-legend snc-icon snc-climate"></div>
+									</td>
+									<td>
+										This symbol represents a climate gauge.  These sites can measure precipitation, water.  Click on this icon 
+										to view a chart of the associated data.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="station-button-icon mvc-legend snc-icon snc-snow"></div>
+									</td>
+									<td>
+										This symbol represents a snow gauge.  These sites can measure the snow depth, and snow water equivalent.  
+										Click on this icon to view a chart of the associated data.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="station-button-icon mvc-legend snc-icon snc-level mvc-green"></div>
+										<div class="station-button-icon mvc-legend snc-icon snc-climate mvc-green"></div>
+									</td>
+									<td>
+										If the image in the gauge icon is green it indicates that the data from that station is up to date.  Even though 
+										this data is up to date it is considered provisional because it has not been checked for accuracy and may be 
+										incorrect.  Anyone using the data contained within this website is cautioned to carefully consider the provisional
+										 nature of this information and should not use it for making decisions that concern personal or public safety or 
+										the conduct of business that involves substantial monetary or operational consequences.  Please note that Snow Gauges
+										 are not marked as up to date or out of date.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="station-button-icon mvc-legend snc-icon snc-level mvc-red"></div>
+										<div class="station-button-icon mvc-legend snc-icon snc-climate mvc-red"></div>
+									</td>
+									<td>
+										A red image indicates that automated gauge data is over 24 hours old or staff gauge data is over 7 days old.  Our 
+										automated gauges are solar powered and talk to the office with cell phone modems or satellite transmitters.  As a 
+										result, Mother Nature can sometimes block our signal strength or solar panels, stopping data transmission.  Please
+										 note that Snow Gauges are not marked as up to date or out of date.
+									</td>
+								</tr>
+								<tr class="mvc-multi-row">
+									<td colspan="2" class="mvc-bold">
+										Why are there extra lines on the map?
+									</td>
+								</tr>
+								<tr>
+									<td colspan="2">
+										The new black lines on the map represent subwatersheds within the larger South Nations River watershed.  When a 
+										subwatershed has a transparent colour an active conditions message is in effect.  Click on a subwatershed to see 
+										its name and if there is an active conditions message.
+									</td>
+								</tr>
+								<tr class="mvc-multi-row">
+									<td>
+										<div class="leaflet-control-zoom-in mvc-legend" style="font-size: 22px;">
+											+
+										</div>
+									</td>
+									<td rowspan="2">
+										These buttons are used to control the zoom.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="leaflet-control-zoom-out mvc-legend" style="font-size: 22px;">
+											−
+										</div>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="leaflet-control-defaultextent-toggle mvc-legend"></div>
+									</td>
+									<td>
+										This button returns the map to its original extent.
+									</td>
+								</tr>
+								<tr>
+									<th colspan="2" class="mvc-center-x mvc-italic">
+										Understand Flood Status Messages
+									</th>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-normal mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Normal:
+										</span>
+										<span>
+											No flood or drought conditions exist.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-i mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Watershed Conditions Statement - Water Safety:
+										</span>
+										<span>
+											High flows, unsafe banks, melting ice or other factors that could be dangerous for recreational users such as 
+											anglers, canoeists, hikers, children, pets, etc. Flooding is not expected.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-i mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Watershed Conditions Statement - Flood Outlook:
+										</span>
+										<span>
+											Early notice of the potential for flooding based on weather forecasts calling for heavy rain, snow melt, high 
+											wind or other conditions that could lead to high runoff, cause ice jams, lake shore flooding or erosion.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-ii mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Flood Watch:
+										</span>
+										<span>
+											Flooding is possible in specific watercourses or municipalities. Municipalities, emergency services and 
+											individual landowners in flood-prone areas should prepare.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-iii mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Flood Warning:
+										</span>
+										<span>
+											Flooding is imminent or already occurring in specific watercourses or municipalities.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<th colspan="2" class="mvc-center-x mvc-italic">
+										Understand Drought Status Messages
+									</th>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-i mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Level 1:
+										</span>
+										<span>
+											Flows are less than 70 percent of their normal summer low flow and/or precipitation has been less than 80 per 
+											cent of average. Water users are asked to voluntarily reduce consumption by 10 per cent.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-ii mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Level 2:
+										</span>
+										<span>
+											Flows are less than 50 percent of their normal summer low flow and/or precipitation has been less than 60 per 
+											cent of average. The Ministry of the Environment and Climate Change will send letters to holders of Permits to
+											 Take Water to as them to voluntarily reduce their consumption by 20 per cent.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-iii mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Level 3:
+										</span>
+										<span>
+											Flows are less than 30 percent of their normal summer low flow and/or precipitation has been less than 40 per 
+											cent of average. There is also potential for economic harm to water takers and/or significant harm to the 
+											ecosystem. The Water Response Team may ask the province to impose mandatory restrictions on those holding 
+											Permits to Take Water.
+										</span>
+									</td>
+								</tr>
+								<!---->
+							</table>
+						</div>
+					</div>
+					<div class="modal-footer" style="white-space: nowrap;">
+						<!--div class="mvc-feedback mvc-feedback-large mvc-scrollable">
+							<span class="mvc-bold">
+								Our website is evolving as we implement an open data strategy.
+								<br/>
+								<a href="mailto:cmcguire@mvc.on.ca">
+									Click here to submit your feedback.
+								</a>
+							</span>
+						</div-->
+						<!--div class="mvc-feedback mvc-feedback-small">
+							<span class="mvc-bold">
+								Our website is evolving.
+								<br/>
+								<a href="mailto:cmcguire@mvc.on.ca">
+									Submit your feedback.
+								</a>
+							</span>
+						</div-->
+						<button type="button" class="" data-dismiss="modal">
+							Close
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="conditions-modal" class="modal fade" role="dialog">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">
+							&times;
+						</button>
+						<h4 class="modal-title">
+							<span class="mvc-cond-title"></span>
+						</h4>
+					</div>
+					<div class="modal-body">
+						<div class="mvc-cond-img-container">
+							<div class="mvc-cond-img"></div><!--div to display the image for the current conditions-->
+						</div>
+						<div class="mvc-cond-content"></div><!--div to receive the text body of the message-->
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="" data-dismiss="modal">
+							Close
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="disclaimer-modal" class="modal fade" data-backdrop="static" role="dialog">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title mvc-bold">
+							Disclaimer: Provisional Data
+						</h4>
+					</div>
+					<div class="modal-body">
+						<div style="font-size: 17px;">
+							<p>
+								<span class="mvc-bold">
+									Caution:
+								</span>
+								Users of the SNC's real-time data are cautioned to consider the 
+								<a href="/legal/provisional-data/">provisional</a>
+								nature of the information before using it for decisions that concern personal or public safety or the conduct of business.  
+							</p>
+							<p>
+								The South Nations Conservation assumes no responsibility for the correctness of the information contained in 
+								this website nor liability to any user of such information, regardless of the purpose.  
+							</p>
+							<p>
+								Warning!  River levels and flows can change rapidly.  
+							</p>
+						</div>
+						<div>
+							<h5 class="mvc-bold">
+								How to use our Page
+							</h5>
+							<table class="mvc-help">
+								<tr>
+									<td>
+										<div class="mvc-marker-icon mvc-legend snc-level"></div>
+									</td>
+									<td>
+										This symbol represents the location of a level gauge.  Click on this icon to see the most recent level and flow data
+										 from this location.  
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-marker-icon mvc-legend snc-climate"></div>
+									</td>
+									<td>
+										This symbol represents the location of a gauge.  Click on this icon to see the most recent precipitation data from 
+										this location.  
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-marker-icon mvc-legend snc-snow"></div>
+									</td>
+									<td>
+										This symbol represents the location of a gauge.  Click on this icon to see the most recent snow depth and snow 
+										water equivalent data from this location.  
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="marker-cluster marker-cluster-small mvc-legend">
+											<div>
+												<span>
+													#
+												</span>
+											</div>
+										</div>
+									</td>
+									<td>
+										This symbol represents a cluster of gauges.  Click on the cluster icon to zoom into the gauge cluster.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="station-button-icon mvc-legend snc-icon snc-level"></div>
+									</td>
+									<td>
+										This symbol represents a level gauge.  These sites can measure the water level, flow, and precipitation, 
+										water.  Click on this icon to view a chart of the associated data.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="station-button-icon mvc-legend snc-icon snc-climate"></div>
+									</td>
+									<td>
+										This symbol represents a climate gauge.  These sites can measure precipitation, water.  Click on this icon 
+										to view a chart of the associated data.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="station-button-icon mvc-legend snc-icon snc-snow"></div>
+									</td>
+									<td>
+										This symbol represents a snow gauge.  These sites can measure the snow depth, and snow water equivalent.  
+										Click on this icon to view a chart of the associated data.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="station-button-icon mvc-legend snc-icon snc-level mvc-green"></div>
+										<div class="station-button-icon mvc-legend snc-icon snc-climate mvc-green"></div>
+									</td>
+									<td>
+										If the image in the gauge icon is green it indicates that the data from that station is up to date.  Even though 
+										this data is up to date it is considered provisional because it has not been checked for accuracy and may be 
+										incorrect.  Anyone using the data contained within this website is cautioned to carefully consider the provisional
+										 nature of this information and should not use it for making decisions that concern personal or public safety or 
+										the conduct of business that involves substantial monetary or operational consequences.  Please note that Snow Gauges
+										 are not marked as up to date or out of date.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="station-button-icon mvc-legend snc-icon snc-level mvc-red"></div>
+										<div class="station-button-icon mvc-legend snc-icon snc-climate mvc-red"></div>
+									</td>
+									<td>
+										A red image indicates that automated gauge data is over 24 hours old or staff gauge data is over 7 days old.  Our 
+										automated gauges are solar powered and talk to the office with cell phone modems or satellite transmitters.  As a 
+										result, Mother Nature can sometimes block our signal strength or solar panels, stopping data transmission.  Please
+										 note that Snow Gauges are not marked as up to date or out of date.
+									</td>
+								</tr>
+								<tr class="mvc-multi-row">
+									<td colspan="2" class="mvc-bold">
+										Why are there extra lines on the map?
+									</td>
+								</tr>
+								<tr>
+									<td colspan="2">
+										The new black lines on the map represent subwatersheds within the larger South Nations River watershed.  When a 
+										subwatershed has a transparent colour an active conditions message is in effect.  Click on a subwatershed to see 
+										its name and if there is an active conditions message.
+									</td>
+								</tr>
+								<tr class="mvc-multi-row">
+									<td>
+										<div class="leaflet-control-zoom-in mvc-legend" style="font-size: 22px;">
+											+
+										</div>
+									</td>
+									<td rowspan="2">
+										These buttons are used to control the zoom.
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="leaflet-control-zoom-out mvc-legend" style="font-size: 22px;">
+											−
+										</div>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="leaflet-control-defaultextent-toggle mvc-legend"></div>
+									</td>
+									<td>
+										This button returns the map to its original extent.
+									</td>
+								</tr>
+								<tr>
+									<th colspan="2" class="mvc-center-x mvc-italic">
+										Understand Flood Status Messages
+									</th>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-normal mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Normal:
+										</span>
+										<span>
+											No flood or drought conditions exist.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-i mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Watershed Conditions Statement - Water Safety:
+										</span>
+										<span>
+											High flows, unsafe banks, melting ice or other factors that could be dangerous for recreational users such as 
+											anglers, canoeists, hikers, children, pets, etc. Flooding is not expected.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-i mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Watershed Conditions Statement - Flood Outlook:
+										</span>
+										<span>
+											Early notice of the potential for flooding based on weather forecasts calling for heavy rain, snow melt, high 
+											wind or other conditions that could lead to high runoff, cause ice jams, lake shore flooding or erosion.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-ii mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Flood Watch:
+										</span>
+										<span>
+											Flooding is possible in specific watercourses or municipalities. Municipalities, emergency services and 
+											individual landowners in flood-prone areas should prepare.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-iii mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Flood Warning:
+										</span>
+										<span>
+											Flooding is imminent or already occurring in specific watercourses or municipalities.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<th colspan="2" class="mvc-center-x mvc-italic">
+										Understand Drought Status Messages
+									</th>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-i mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Level 1:
+										</span>
+										<span>
+											Flows are less than 70 percent of their normal summer low flow and/or precipitation has been less than 80 per 
+											cent of average. Water users are asked to voluntarily reduce consumption by 10 per cent.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-ii mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Level 2:
+										</span>
+										<span>
+											Flows are less than 50 percent of their normal summer low flow and/or precipitation has been less than 60 per 
+											cent of average. The Ministry of the Environment and Climate Change will send letters to holders of Permits to
+											 Take Water to as them to voluntarily reduce their consumption by 20 per cent.
+										</span>
+									</td>
+								</tr>
+								<tr>
+									<td>
+										<div class="mvc-sub-watershed-colour mvc-sub-watershed-level-iii mvc-legend"></div>
+									</td>
+									<td>
+										<span class="mvc-bold">
+											Level 3:
+										</span>
+										<span>
+											Flows are less than 30 percent of their normal summer low flow and/or precipitation has been less than 40 per 
+											cent of average. There is also potential for economic harm to water takers and/or significant harm to the 
+											ecosystem. The Water Response Team may ask the province to impose mandatory restrictions on those holding 
+											Permits to Take Water.
+										</span>
+									</td>
+								</tr>
+								<!---->
+							</table>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="" data-dismiss="modal">
+							I Agree
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<input type="button" id="disclaimer-button" class="mvc-button-automatic" data-toggle="modal" data-target="#disclaimer-modal" hidden=""/>
+		<div id="range-alert-modal" class="modal fade mvc-notice" data-backdrop="static" role="dialog">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">
+							NOTICE:
+						</h4>
+					</div>
+					<div class="modal-body">
+						<div>
+							<p>
+								In order to conserve webpage performance, the largest range the online table will display is a full year.  
+								To view a larger range of data, please download the data as a csv using the download button at the bottom of the table window.  
+							</p>
+						</div>
+						<input type="text" name="min" class="mvc-range-selector" pattern="\d{3}\d+-(0[1-9]|1[0-2])-([0][1-9]|[1-2][0-9]|3[0-1])" hidden=""/>
+						<input type="text" name="max" class="mvc-range-selector" pattern="\d{3}\d+-(0[1-9]|1[0-2])-([0][1-9]|[1-2][0-9]|3[0-1])" hidden=""/>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="download" data-mvc-target="#range-alert-modal input.mvc-range-selector">
+							&nbsp; Download
+						</button>
+						<button type="button" class="" data-dismiss="modal">
+							Close
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<input type="button" id="range-alert-button" class="mvc-button-automatic" data-toggle="modal" data-target="#range-alert-modal.mvc-notice" hidden=""/>
+		<input type="button" id="help-button" class="mvc-button-automatic" data-toggle="modal" data-target="#help-modal" hidden=""/>
+		<script>
+			function loadTable() {};
+			function loadGraph() {};
+			window.init('table-content', 'chart-content');
+		</script>
+		<script src="water-levels.js"></script>
+	</body>
+</html>

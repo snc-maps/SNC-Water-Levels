@@ -1,0 +1,34 @@
+#alert-msg
+{
+	font-weight: bold;
+}
+
+
+#table-title
+{
+	text-align: center;
+}
+
+
+tr.mvc-row-
+{
+	display: none;
+}
+
+#chart-info
+{
+	margin: 0;
+}
+.disabled
+{
+	display:none;
+}
+#chart-info h5
+{
+	margin-top:0;
+	margin-bottom:0;
+}
+#chart-info ul
+{
+	margin-bottom: 20px;
+}
